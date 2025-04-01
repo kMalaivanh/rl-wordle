@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rocket League Wordle</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f8f9fa;
+      padding: 2rem;
+    }
+    input, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      margin: 0.3rem;
+    }
+    .row {
+      display: flex;
+      justify-content: center;
+      margin: 0.5rem 0;
+      flex-wrap: wrap;
+    }
+    .cell {
+      border: 1px solid #ccc;
+      padding: 0.5rem 1rem;
+      margin: 0.2rem;
+      background: #fff;
+      min-width: 100px;
+    }
+    .green { background-color: #b6fcb6; }
+    .yellow { background-color: #fff68f; }
+    .gray { background-color: #e0e0e0; }
+  </style>
+</head>
+<body>
+  <h1>Rocket League Wordle</h1>
+  <p>Guess the Rocket League pro by name!</p>
+  <input type="text" id="guess" placeholder="Enter player name" />
+  <button onclick="makeGuess()">Guess</button>
+  <div id="feedback"></div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js';
+    import { getFirestore, collection, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCFm6zc6g1NBhIzO00XYujQNYIQE9ajewk",
+      authDomain: "rl-wordle.firebaseapp.com",
+      projectId: "rl-wordle",
+      storageBucket: "rl-wordle.appspot.com",
+      messagingSenderId: "65128449456",
+      appId: "1:65128449456:web:340bbc99ac6855fcb78275",
+      measurementId: "G-K3RVQ640PT"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let players = [];
+    let targetPlayer;
+
+    async function loadPlayers() {
+      const snapshot = await getDocs(collection(db, "rocketleague_players"));
+      players = snapshot.docs.map(doc => doc.data());
+      targetPlayer = players[Math.floor(Math.random() * players.length)];
+      console.log("🎯 Target Player:", targetPlayer);
+    }
+
+    window.makeGuess = function () {
+      const input = document.getElementById("guess").value.toLowerCase();
+      const player = players.find(p => p["Player Name"]?.toLowerCase() === input);
+      if (!player) return alert("Player not found");
+
+      const row = document.createElement("div");
+      row.className = "row";
+
+      addCell(row, player["Player Name"], targetPlayer["Player Name"]);
+      addCell(row, player["Current Team"], targetPlayer["Current Team"]);
+      addCell(row, player.Region, targetPlayer.Region);
+      addCell(row, player.Nationality, targetPlayer.Nationality);
+      addCell(row, player.Age, targetPlayer.Age, true);
+      addCell(row, player.Rings, targetPlayer.Rings, true);
+      addCell(row, player["Major/regional/worldcup wins"], targetPlayer["Major/regional/worldcup wins"], true);
+
+      document.getElementById("feedback").appendChild(row);
+
+      if (player["Player Name"] === targetPlayer["Player Name"]) {
+        alert("✅ Correct!");
+      }
+    };
+
+    function addCell(row, val, correctVal, numeric = false) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.innerText = val ?? "-";
+
+      if (val === correctVal) {
+        cell.classList.add("green");
+      } else if (numeric && !isNaN(val) && !isNaN(correctVal)) {
+        const diff = Math.abs(Number(val) - Number(correctVal));
+        if (diff <= 1) {
+          cell.classList.add("yellow");
+        } else {
+          cell.classList.add("gray");
+        }
+      } else {
+        cell.classList.add("gray");
+      }
+
+      row.appendChild(cell);
+    }
+
+    loadPlayers();
+  </script>
+</body>
+</html>
